@@ -134,23 +134,59 @@ export function BackgroundSky({ weather }) {
 export function Stars({ weather }) {
   const ref = useRef()
   const getDayProgress = useDayProgress()
+  const starCount = 5000;
 
   const [positions, phases] = useMemo(() => {
-    const pos = new Float32Array(3000 * 3)
-    const ph = new Float32Array(3000)
-    for (let i = 0; i < 3000; i++) {
+    const pos = new Float32Array(starCount * 3)
+    const ph = new Float32Array(starCount)
+    for (let i = 0; i < starCount; i++) {
+      const isGalaxy = Math.random() > 0.3; // 70% of stars form the galaxy band
+      
       const theta = 2 * Math.PI * Math.random()
-      const phi = Math.acos(2 * Math.random() - 1)
-      const r = 400 + Math.random() * 100
-      pos[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta)
-      pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
-      pos[i * 3 + 2] = r * Math.cos(phi)
+      let phi = Math.acos(2 * Math.random() - 1)
+      
+      if (isGalaxy) {
+        // Concentrate phi around PI/2 (the equator)
+        phi = Math.PI / 2 + (Math.random() - 0.5) * 0.4 * Math.random()
+      }
+      
+      const r = 400 + Math.random() * 200
+      
+      // Calculate base coordinates
+      let x = r * Math.sin(phi) * Math.cos(theta)
+      let y = r * Math.sin(phi) * Math.sin(theta)
+      let z = r * Math.cos(phi)
+      
+      // Tilt the galaxy band by ~30 degrees on the Z axis
+      if (isGalaxy) {
+        const tilt = 0.5; // radians
+        const newX = x * Math.cos(tilt) - y * Math.sin(tilt)
+        const newY = x * Math.sin(tilt) + y * Math.cos(tilt)
+        x = newX
+        y = newY
+      }
 
-      if (pos[i * 3 + 1] < -50) pos[i * 3 + 1] *= -1
+      pos[i * 3 + 0] = x
+      pos[i * 3 + 1] = y
+      pos[i * 3 + 2] = z
 
       ph[i] = Math.random() * Math.PI * 2
     }
     return [pos, ph]
+  }, [])
+
+  // Create a tiny circular texture for the stars to make them round instead of squares
+  const starTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 16
+    canvas.height = 16
+    const context = canvas.getContext('2d')
+    const gradient = context.createRadialGradient(8, 8, 0, 8, 8, 8)
+    gradient.addColorStop(0, 'rgba(255,255,255,1)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    context.fillStyle = gradient
+    context.fillRect(0, 0, 16, 16)
+    return new THREE.CanvasTexture(canvas)
   }, [])
 
   const materialRef = useRef()
@@ -160,12 +196,13 @@ export function Stars({ weather }) {
     const sunY = Math.sin(dayTime * Math.PI * 2) * 400
 
     if (materialRef.current) {
-      const targetOpacity = weather !== 'sunny' ? 0 : (sunY > 0 ? 0 : Math.min(1, -sunY / 100))
+      // Fade in stars earlier during sunset (when sunY is below 100)
+      const targetOpacity = weather !== 'sunny' ? 0 : (sunY > 100 ? 0 : Math.min(1, (100 - sunY) / 200))
       materialRef.current.opacity = THREE.MathUtils.lerp(materialRef.current.opacity, targetOpacity, 0.05)
     }
     if (ref.current) {
       const sizes = ref.current.geometry.attributes.size.array
-      for(let i=0; i<3000; i++) {
+      for(let i=0; i<starCount; i++) {
         sizes[i] = (Math.sin(time * 2 + phases[i]) + 1) * 2.0
       }
       ref.current.geometry.attributes.size.needsUpdate = true
@@ -175,10 +212,10 @@ export function Stars({ weather }) {
   return (
     <points ref={ref}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-size" count={phases.length} array={new Float32Array(3000)} itemSize={1} />
+        <bufferAttribute attach="attributes-position" count={starCount} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-size" count={starCount} array={new Float32Array(starCount)} itemSize={1} />
       </bufferGeometry>
-      <pointsMaterial ref={materialRef} size={3} color="#ffffff" transparent opacity={0.8} sizeAttenuation={false} fog={false} />
+      <pointsMaterial ref={materialRef} map={starTexture} size={2.5} color="#ffffff" transparent opacity={0.8} sizeAttenuation={false} fog={false} depthWrite={false} />
     </points>
   )
 }
@@ -194,7 +231,8 @@ export function IslandSun({ weather }) {
     const angle = dayTime * Math.PI * 2
 
     if (groupRef.current) {
-      groupRef.current.position.set(Math.cos(angle) * 400, Math.sin(angle) * 400, -400)
+      // Orbit directly overhead (Sunrise in +Z, Noon at +Y, Sunset at -Z)
+      groupRef.current.position.set(0, Math.sin(angle) * 500, -Math.cos(angle) * 500)
     }
 
     if (sunLightRef.current) {
@@ -228,7 +266,8 @@ export function IslandMoon({ weather }) {
     const angle = dayTime * Math.PI * 2 + Math.PI
 
     if (groupRef.current) {
-      groupRef.current.position.set(Math.cos(angle) * 400, Math.sin(angle) * 400, -400)
+      // Orbit directly overhead, opposite of the sun
+      groupRef.current.position.set(0, Math.sin(angle) * 500, -Math.cos(angle) * 500)
     }
 
     if (moonLightRef.current) {
@@ -251,40 +290,74 @@ export function IslandMoon({ weather }) {
 }
 
 function WindLeaves() {
-  const particlesCount = 200;
-  const positions = useMemo(() => {
-    const pos = new Float32Array(particlesCount * 3)
-    for(let i=0; i<particlesCount; i++) {
-      pos[i*3] = (Math.random() - 0.5) * 40
-      pos[i*3+1] = Math.random() * 15 + PLATFORM_Y
-      pos[i*3+2] = (Math.random() - 0.5) * 40
-    }
-    return pos
+  const lineCount = 60;
+  
+  const meshRef = useRef()
+  const materialRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+
+  // Generate random starting positions, speeds, and seeds for waving
+  const lines = useMemo(() => {
+    return Array.from({ length: lineCount }).map(() => ({
+      progress: (Math.random() - 0.5) * 160,
+      baseY: Math.random() * 20 + PLATFORM_Y,
+      baseZ: (Math.random() - 0.5) * 160,
+      speed: 0.2 + Math.random() * 0.6,
+      seed: Math.random() * Math.PI * 2
+    }))
   }, [])
 
-  const ref = useRef()
-
   useFrame((state) => {
+    if (!meshRef.current || !materialRef.current) return
     const time = state.clock.elapsedTime
-    const pos = ref.current.geometry.attributes.position.array
-    for(let i=0; i<particlesCount; i++) {
-      pos[i*3] -= 0.05
-      pos[i*3+1] += Math.sin(time * 2 + i) * 0.02
-      if (pos[i*3] < -20) {
-        pos[i*3] = 20
-        pos[i*3+1] = Math.random() * 15 + PLATFORM_Y
+    
+    // Create random gusts of wind that come and go
+    // Combination of sine waves creates unpredictable quiet/windy moments
+    const gustFactor = Math.sin(time * 0.2) + Math.cos(time * 0.15 + 2);
+    const isWindy = gustFactor > 0.5;
+    
+    // Smoothly fade in/out the wind lines based on gust
+    materialRef.current.opacity = THREE.MathUtils.lerp(
+      materialRef.current.opacity, 
+      isWindy ? 0.3 : 0.0, 
+      0.02
+    );
+
+    // If it's not windy and lines are invisible, no need to compute movement
+    if (materialRef.current.opacity < 0.01) return;
+
+    lines.forEach((line, i) => {
+      // Move line rapidly along X to simulate fast wind
+      line.progress -= line.speed * (isWindy ? 1.5 : 0.5)
+      // Reset if it goes too far
+      if (line.progress < -80) {
+        line.progress = 80
+        line.baseY = Math.random() * 20 + PLATFORM_Y
+        line.baseZ = (Math.random() - 0.5) * 160
       }
-    }
-    ref.current.geometry.attributes.position.needsUpdate = true
+      
+      const x = line.progress
+      const y = line.baseY + Math.sin(x * 0.1 + line.seed) * 1.5
+      const z = line.baseZ + Math.cos(x * 0.1 + line.seed) * 1.5
+
+      dummy.position.set(x, y, z)
+      
+      // Calculate the derivative to find the tangent angle
+      const derivativeY = Math.cos(x * 0.1 + line.seed) * 0.15
+      dummy.rotation.set(0, 0, derivativeY)
+      
+      dummy.scale.set(1 + Math.random() * 0.5, 1, 1) // Flicker scale for anime effect
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
   })
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={particlesCount} array={positions} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial color="#a0e0a0" size={0.15} transparent opacity={0.6} />
-    </points>
+    <instancedMesh ref={meshRef} args={[null, null, lineCount]}>
+      <planeGeometry args={[2.0, 0.05]} />
+      <meshBasicMaterial ref={materialRef} color="#ffffff" transparent opacity={0} depthWrite={false} />
+    </instancedMesh>
   )
 }
 
@@ -434,6 +507,20 @@ function CampfireGlow() {
     return pos
   }, [])
 
+  // Generate a circular gradient texture for soft round particles instead of squares
+  const fireTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 32
+    canvas.height = 32
+    const context = canvas.getContext('2d')
+    const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16)
+    gradient.addColorStop(0, 'rgba(255,255,255,1)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    context.fillStyle = gradient
+    context.fillRect(0, 0, 32, 32)
+    return new THREE.CanvasTexture(canvas)
+  }, [])
+
   useFrame((state) => {
     const time = state.clock.elapsedTime
     if (lightRef.current) {
@@ -460,7 +547,7 @@ function CampfireGlow() {
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={particlesCount} array={positions} itemSize={3} />
         </bufferGeometry>
-        <pointsMaterial color="#ffaa00" size={0.2} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
+        <pointsMaterial map={fireTexture} color="#ffaa00" size={0.3} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
       </points>
     </group>
   )

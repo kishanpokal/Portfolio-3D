@@ -3,6 +3,7 @@ import Scene from './components/Canvas/Scene'
 import useGameStore from './store/useGameStore'
 import EditorScene from './components/Editor/EditorScene'
 import EditorUI from './components/Editor/EditorUI'
+import ControlsOverlay from './components/UI/ControlsOverlay'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls } from '@react-three/drei'
 
@@ -30,6 +31,9 @@ function App() {
         <>
           {/* 3D Canvas Layer */}
           <Scene />
+          
+          {/* UI Layer */}
+          <ControlsOverlay />
           
           {/* Portfolio Name */}
           <div style={{
