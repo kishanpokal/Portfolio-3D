@@ -4,8 +4,10 @@ import useGameStore from './store/useGameStore'
 import EditorScene from './components/Editor/EditorScene'
 import EditorUI from './components/Editor/EditorUI'
 import ControlsOverlay from './components/UI/ControlsOverlay'
+import LoadingScreen from './components/UI/LoadingScreen'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls } from '@react-three/drei'
+import { useMemo } from 'react'
 
 const keyboardMap = [
   { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
@@ -17,6 +19,12 @@ const keyboardMap = [
 
 function App() {
   const { isEditor, toggleEditor } = useGameStore()
+
+  // Editor access only via URL param ?editor=true
+  const editorEnabled = useMemo(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('editor') === 'true'
+  }, [])
 
   return (
     <KeyboardControls map={keyboardMap}>
@@ -32,7 +40,10 @@ function App() {
           {/* 3D Canvas Layer */}
           <Scene />
           
-          {/* UI Layer */}
+          {/* Loading Screen */}
+          <LoadingScreen />
+          
+          {/* Controls Overlay (shows after loading) */}
           <ControlsOverlay />
           
           {/* Portfolio Name */}
@@ -70,26 +81,28 @@ function App() {
         </>
       )}
 
-      {/* Editor Toggle Button */}
-      <button 
-        onClick={toggleEditor}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          padding: '10px 20px',
-          backgroundColor: isEditor ? '#F44336' : '#2196F3',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer',
-          zIndex: 9999,
-          fontWeight: 'bold',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-        }}
-      >
-        {isEditor ? 'Exit Editor' : 'Map Editor'}
-      </button>
+      {/* Editor Toggle — only visible when ?editor=true */}
+      {editorEnabled && (
+        <button 
+          onClick={toggleEditor}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '10px 20px',
+            backgroundColor: isEditor ? '#F44336' : '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            zIndex: 9999,
+            fontWeight: 'bold',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+          }}
+        >
+          {isEditor ? 'Exit Editor' : 'Map Editor'}
+        </button>
+      )}
     </KeyboardControls>
   )
 }

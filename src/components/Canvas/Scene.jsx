@@ -29,23 +29,13 @@ export default function Scene() {
           <color attach="background" args={['#050505']} />
         )}
 
-        {/* Lighting */}
-        <ambientLight intensity={0.3} color="#ffeedd" />
-        <hemisphereLight args={['#4a1a7a', '#4a7c3f', 0.4]} />
-        <directionalLight
-          position={[15, 25, 10]}
-          intensity={1.5}
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-35}
-          shadow-camera-right={35}
-          shadow-camera-top={35}
-          shadow-camera-bottom={-35}
-          shadow-camera-far={80}
-          shadow-bias={-0.0005}
-          color="#d0b0ff"
-        />
-        <directionalLight position={[-10, 10, -10]} intensity={0.3} color="#4a1a7a" />
+        {/* Lighting is handled by IslandEnvironment in FloatingIsland.jsx */}
+        {!isOverworld && (
+          <>
+            <ambientLight intensity={0.3} color="#ffeedd" />
+            <directionalLight position={[15, 25, 10]} intensity={1.5} castShadow color="#ffffff" />
+          </>
+        )}
 
         <Suspense fallback={null}>
           {isOverworld && (

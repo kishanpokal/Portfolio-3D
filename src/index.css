@@ -119,20 +119,16 @@ html, body, #root {
   justify-content: center;
   align-items: center;
   color: white;
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255,255,255,0.1);
-  border-top-color: #00ffff; /* Cyan */
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  display: none; /* Kept for backwards compatibility but not used in premium loader */
 }
 
 /* Shader Flash Overlay (DOM alternative if not using purely post-processing) */
