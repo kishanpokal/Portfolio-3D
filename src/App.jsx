@@ -5,6 +5,7 @@ import EditorScene from './components/Editor/EditorScene'
 import EditorUI from './components/Editor/EditorUI'
 import ControlsOverlay from './components/UI/ControlsOverlay'
 import LoadingScreen from './components/UI/LoadingScreen'
+import ContactForm from './components/UI/ContactForm'
 import { Canvas } from '@react-three/fiber'
 import { KeyboardControls } from '@react-three/drei'
 import { useMemo } from 'react'
@@ -46,6 +47,8 @@ function App() {
           {/* Controls Overlay (shows after loading) */}
           <ControlsOverlay />
           
+          {/* Contact Form (triggered by 3D cube or button) */}
+          <ContactForm />
           {/* Portfolio Name */}
           <div style={{
             position: 'fixed',

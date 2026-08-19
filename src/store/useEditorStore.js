@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { mapBlueprint } from '../data/mapBlueprint'
 import { islandBlueprint } from '../data/islandBlueprint'
+import { contactIslandBlueprint } from '../data/contactIslandBlueprint'
 
 // Overworld uses shorthand type names that map through MODEL_MAP to actual .glb files
 const MODEL_MAP = {
@@ -51,14 +52,29 @@ function blueprintToModels(blueprint, prefix, modelMap = null) {
 
 const overworldModels = blueprintToModels(mapBlueprint, 'ow', MODEL_MAP)
 const islandModelsInit = blueprintToModels(islandBlueprint, 'isl')
+const contactModelsInit = blueprintToModels(contactIslandBlueprint, 'con')
+
+// Helper to resolve scene → state key
+function getSceneKey(scene) {
+  if (scene === 'contact') return 'contactModels'
+  if (scene === 'overworld') return 'overworldModels'
+  return 'islandModels'
+}
+
+function getVarName(scene) {
+  if (scene === 'contact') return 'contactIslandBlueprint'
+  if (scene === 'overworld') return 'mapBlueprint'
+  return 'islandBlueprint'
+}
 
 const useEditorStore = create((set, get) => ({
-  // Which scene is being edited: 'overworld' | 'island'
+  // Which scene is being edited: 'overworld' | 'island' | 'contact'
   editorScene: 'island',
   
   // Models per scene (stored separately)
   overworldModels: overworldModels,
   islandModels: islandModelsInit,
+  contactModels: contactModelsInit,
 
   selectedFile: null,
   selectedId: null,
@@ -77,7 +93,7 @@ const useEditorStore = create((set, get) => ({
 
   addModel: (file, position) => {
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
-    const key = get().editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(get().editorScene)
     set(state => ({
       [key]: [...state[key], {
         id,
@@ -95,7 +111,7 @@ const useEditorStore = create((set, get) => ({
   },
 
   updateModel: (id, props) => {
-    const key = get().editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(get().editorScene)
     set(state => ({
       [key]: state[key].map(m =>
         m.id === id ? { ...m, ...props } : m
@@ -105,7 +121,7 @@ const useEditorStore = create((set, get) => ({
 
   duplicateSelected: () => {
     const { selectedId, editorScene } = get()
-    const key = editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(editorScene)
     const models = get()[key]
     const model = models.find(m => m.id === selectedId)
     if (!model) return
@@ -121,7 +137,7 @@ const useEditorStore = create((set, get) => ({
   },
 
   removeSelected: () => {
-    const key = get().editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(get().editorScene)
     set(state => ({
       [key]: state[key].filter(m => m.id !== state.selectedId),
       selectedId: null,
@@ -129,15 +145,15 @@ const useEditorStore = create((set, get) => ({
   },
 
   clearAll: () => {
-    const key = get().editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(get().editorScene)
     set({ [key]: [], selectedId: null, selectedFile: null })
   },
 
   exportBlueprint: () => {
     const { editorScene } = get()
-    const key = editorScene === 'island' ? 'islandModels' : 'overworldModels'
+    const key = getSceneKey(editorScene)
     const models = get()[key]
-    const varName = editorScene === 'island' ? 'islandBlueprint' : 'mapBlueprint'
+    const varName = getVarName(editorScene)
     const lines = models.map(m => {
       const name = m.file.replace('.glb', '')
       const pos = `[${m.position.map(v => Math.round(v * 100) / 100).join(', ')}]`

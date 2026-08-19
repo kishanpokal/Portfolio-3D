@@ -5,6 +5,7 @@ import { RigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
 import { islandBlueprint } from '../../data/islandBlueprint'
 import useGameStore from '../../store/useGameStore'
+import ContactIsland from './ContactIsland'
 
 // Constants
 const PLATFORM_Y = -1
@@ -577,13 +578,13 @@ function WindLeaves() {
 // ─── Rain Drops (Elongated Streaks) ────────────────────────────
 
 function RainDrops({ active }) {
-  const particlesCount = 2000
+  const particlesCount = 4000
   const positions = useMemo(() => {
     const pos = new Float32Array(particlesCount * 3)
     for (let i = 0; i < particlesCount; i++) {
-      pos[i*3] = (Math.random() - 0.5) * 60
+      pos[i*3] = -40 + Math.random() * 105      // Full map coverage X: -40 to +65
       pos[i*3+1] = Math.random() * 50 + PLATFORM_Y
-      pos[i*3+2] = (Math.random() - 0.5) * 60
+      pos[i*3+2] = (Math.random() - 0.5) * 90  // Full map coverage Z: -45 to +45
     }
     return pos
   }, [])
@@ -610,8 +611,8 @@ function RainDrops({ active }) {
         pos[i*3] -= 0.06 // Wind drift
         if (pos[i*3+1] < PLATFORM_Y) {
           pos[i*3+1] = Math.random() * 30 + 20 + PLATFORM_Y
-          pos[i*3] = (Math.random() - 0.5) * 60
-          pos[i*3+2] = (Math.random() - 0.5) * 60
+          pos[i*3] = -40 + Math.random() * 105
+          pos[i*3+2] = (Math.random() - 0.5) * 90
         }
       }
       ref.current.geometry.attributes.position.needsUpdate = true
@@ -631,13 +632,13 @@ function RainDrops({ active }) {
 // ─── Snow Flakes (Soft Circles) ────────────────────────────────
 
 function SnowFlakes({ active }) {
-  const particlesCount = 1200
+  const particlesCount = 2500
   const positions = useMemo(() => {
     const pos = new Float32Array(particlesCount * 3)
     for (let i = 0; i < particlesCount; i++) {
-      pos[i*3] = (Math.random() - 0.5) * 60
+      pos[i*3] = -40 + Math.random() * 105      // Full map coverage X: -40 to +65
       pos[i*3+1] = Math.random() * 35 + PLATFORM_Y
-      pos[i*3+2] = (Math.random() - 0.5) * 60
+      pos[i*3+2] = (Math.random() - 0.5) * 90  // Full map coverage Z: -45 to +45
     }
     return pos
   }, [])
@@ -666,8 +667,8 @@ function SnowFlakes({ active }) {
         pos[i*3+2] += Math.cos(time * 0.5 + i * 0.3) * 0.012
         if (pos[i*3+1] < PLATFORM_Y) {
           pos[i*3+1] = Math.random() * 30 + 15 + PLATFORM_Y
-          pos[i*3] = (Math.random() - 0.5) * 60
-          pos[i*3+2] = (Math.random() - 0.5) * 60
+          pos[i*3] = -40 + Math.random() * 105
+          pos[i*3+2] = (Math.random() - 0.5) * 90
         }
       }
       ref.current.geometry.attributes.position.needsUpdate = true
@@ -946,13 +947,14 @@ export function IslandEnvironment({ weather = 'sunny' }) {
 
 // ─── Island Tile ───────────────────────────────────────────────
 
-function IslandTile({ type, position, rotation = [0, 0, 0], scale = 1 }) {
+export function IslandTile({ type, position, rotation = [0, 0, 0], scale = 1, signText }) {
   const file = type + '.glb'
   const { scene } = useGLTF(B + file)
   const cleanRotation = rotation.map(r => isNaN(r) ? 0 : r)
+  const isBridge = type.startsWith('bridge_')
 
   return (
-    <RigidBody type="fixed" colliders="trimesh">
+    <RigidBody type="fixed" colliders={isBridge ? false : "trimesh"}>
       <group position={position} rotation={cleanRotation} scale={typeof scale === 'number' ? [scale, scale, scale] : scale}>
         <Clone object={scene} />
         {type === 'sign' && (
@@ -967,7 +969,7 @@ function IslandTile({ type, position, rotation = [0, 0, 0], scale = 1 }) {
             maxWidth={0.8}
             textAlign="center"
           >
-            {"Welcome to\nBaseCamp"}
+            {signText || "Welcome to\nBaseCamp"}
           </Text>
         )}
       </group>
@@ -1026,6 +1028,9 @@ export default function FloatingIsland() {
             <CampfireGlow />
           </group>
         )}
+
+        {/* Contact & Socials Island — connected via bridge */}
+        <ContactIsland />
       </group>
     </>
   )

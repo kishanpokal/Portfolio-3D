@@ -53,6 +53,7 @@ function EditorContent() {
   const editorScene = useEditorStore(s => s.editorScene);
   const overworldModels = useEditorStore(s => s.overworldModels);
   const islandModels = useEditorStore(s => s.islandModels);
+  const contactModels = useEditorStore(s => s.contactModels);
   const selectedId = useEditorStore(s => s.selectedId);
   const selectedFile = useEditorStore(s => s.selectedFile);
   const addModel = useEditorStore(s => s.addModel);
@@ -62,12 +63,31 @@ function EditorContent() {
   const clearSelection = useEditorStore(s => s.clearSelection);
   const showGround = useEditorStore(s => s.showGround);
 
-  const placedModels = editorScene === 'island' ? islandModels : overworldModels;
+  const placedModels = editorScene === 'contact'
+    ? contactModels
+    : (editorScene === 'island' ? islandModels : overworldModels);
   
   const { camera } = useThree();
   const controlsRef = useRef();
   
   const selectedModel = placedModels.find(m => m.id === selectedId);
+
+  // Focus on scene change
+  useEffect(() => {
+    if (controlsRef.current) {
+      if (editorScene === 'contact') {
+        controlsRef.current.target.set(38, 1, 0);
+        camera.position.set(38 + 12, 12, 12);
+      } else if (editorScene === 'island') {
+        controlsRef.current.target.set(0, 1, 0);
+        camera.position.set(12, 12, 12);
+      } else {
+        controlsRef.current.target.set(0, 0, 0);
+        camera.position.set(15, 15, 15);
+      }
+      controlsRef.current.update();
+    }
+  }, [editorScene, camera]);
 
   // 'F' key to focus on selected model
   useEffect(() => {
@@ -93,7 +113,7 @@ function EditorContent() {
     }
   };
 
-  const isIsland = editorScene === 'island';
+  const isIsland = editorScene === 'island' || editorScene === 'contact';
 
   return (
     <>
@@ -102,7 +122,7 @@ function EditorContent() {
       {/* Lighting */}
       {isIsland ? (
         <>
-          {/* Island scene gets the purple sky environment */}
+          {/* Island scenes get the sky environment */}
           <IslandEnvironment weather="sunny" />
         </>
       ) : (
@@ -115,11 +135,11 @@ function EditorContent() {
 
       {/* Grid for reference */}
       <Grid 
-        args={[100, 100]} 
+        args={[150, 150]} 
         position={[0, -0.01, 0]} 
         cellColor="#666" 
         sectionColor="#999" 
-        fadeDistance={50}
+        fadeDistance={75}
         visible={!showGround}
       />
 

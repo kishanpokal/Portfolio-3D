@@ -7,7 +7,9 @@ const useGameStore = create((set, get) => ({
   alwaysDay: false,
   alwaysClear: false,
   loadingComplete: false,
+  contactModalOpen: false,
   
+  setContactModalOpen: (val) => set({ contactModalOpen: val }),
   setLoadingComplete: (val) => set({ loadingComplete: val }),
   toggleEditor: () => set(state => ({ isEditor: !state.isEditor })),
   toggleAlwaysDay: () => set(state => ({ alwaysDay: !state.alwaysDay })),

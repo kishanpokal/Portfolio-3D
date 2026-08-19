@@ -40,15 +40,8 @@ export default function FastTravelMenu() {
       </div>
       
       {/* Recruiter 5-second path requirement: Instant resume access */}
-      <a href="/resume.pdf" download className="download-btn" onClick={(e) => {
-        // Prevent default if no file exists yet so it doesn't navigate away during dev
-        // In prod, this will trigger the download
-        if (process.env.NODE_ENV === 'development') {
-           console.log('Downloading resume.pdf');
-           // e.preventDefault(); 
-        }
-      }}>
-        Download Resume
+      <a href="/Kishan_resume.pdf" target="_blank" rel="noopener noreferrer" className="download-btn">
+        View Resume
       </a>
     </div>
   );

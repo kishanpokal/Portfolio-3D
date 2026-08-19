@@ -78,20 +78,31 @@ export default function EditorUI() {
             <button 
               onClick={() => setEditorScene('island')}
               style={{
-                flex: 1, padding: '8px', border: 'none', borderRadius: '4px', cursor: 'pointer',
+                flex: 1, padding: '8px 4px', border: 'none', borderRadius: '4px', cursor: 'pointer',
                 background: editorScene === 'island' ? '#9C27B0' : '#333',
-                color: 'white', fontSize: '13px', fontWeight: editorScene === 'island' ? 'bold' : 'normal',
+                color: 'white', fontSize: '11px', fontWeight: editorScene === 'island' ? 'bold' : 'normal',
                 transition: 'all 0.2s'
               }}
             >
-              🏝️ Island
+              🏝️ BaseCamp
+            </button>
+            <button 
+              onClick={() => setEditorScene('contact')}
+              style={{
+                flex: 1, padding: '8px 4px', border: 'none', borderRadius: '4px', cursor: 'pointer',
+                background: editorScene === 'contact' ? '#2196F3' : '#333',
+                color: 'white', fontSize: '11px', fontWeight: editorScene === 'contact' ? 'bold' : 'normal',
+                transition: 'all 0.2s'
+              }}
+            >
+              📬 Contact
             </button>
             <button 
               onClick={() => setEditorScene('overworld')}
               style={{
-                flex: 1, padding: '8px', border: 'none', borderRadius: '4px', cursor: 'pointer',
+                flex: 1, padding: '8px 4px', border: 'none', borderRadius: '4px', cursor: 'pointer',
                 background: editorScene === 'overworld' ? '#4CAF50' : '#333',
-                color: 'white', fontSize: '13px', fontWeight: editorScene === 'overworld' ? 'bold' : 'normal',
+                color: 'white', fontSize: '11px', fontWeight: editorScene === 'overworld' ? 'bold' : 'normal',
                 transition: 'all 0.2s'
               }}
             >
@@ -187,12 +198,16 @@ export default function EditorUI() {
           borderRadius: '12px',
           fontSize: '12px',
           fontWeight: 'bold',
-          background: editorScene === 'island' ? 'rgba(156, 39, 176, 0.3)' : 'rgba(76, 175, 80, 0.3)',
-          color: editorScene === 'island' ? '#CE93D8' : '#A5D6A7',
-          border: `1px solid ${editorScene === 'island' ? '#9C27B0' : '#4CAF50'}`,
+          background: editorScene === 'contact'
+            ? 'rgba(33, 150, 243, 0.3)'
+            : (editorScene === 'island' ? 'rgba(156, 39, 176, 0.3)' : 'rgba(76, 175, 80, 0.3)'),
+          color: editorScene === 'contact'
+            ? '#90CAF9'
+            : (editorScene === 'island' ? '#CE93D8' : '#A5D6A7'),
+          border: `1px solid ${editorScene === 'contact' ? '#2196F3' : (editorScene === 'island' ? '#9C27B0' : '#4CAF50')}`,
           marginRight: '5px'
         }}>
-          {editorScene === 'island' ? '🏝️ Island' : '⛰️ Overworld'}
+          {editorScene === 'contact' ? '📬 Contact' : (editorScene === 'island' ? '🏝️ BaseCamp' : '⛰️ Overworld')}
         </div>
 
         <div style={{ color: '#aaa', fontSize: '14px', alignSelf: 'center', marginRight: '10px' }}>Transform:</div>
