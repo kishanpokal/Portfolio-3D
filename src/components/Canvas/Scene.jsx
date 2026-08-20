@@ -1,22 +1,17 @@
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import useGameStore from '../../store/useGameStore'
-import Mountain from './Mountain'
 import Portals from './Portals'
 import { Physics } from '@react-three/rapier'
 import Player from '../Player/Player'
 import FloatingIsland, { ISLAND_SPAWN, FALL_THRESHOLD } from './FloatingIsland'
-
-const TransitionFlash = () => {
-  const isTransitioning = useGameStore((state) => state.isTransitioning)
-  return (
-    <div className={`transition-flash ${isTransitioning ? 'active' : ''}`} />
-  )
-}
+import SkillGalaxy, { GALAXY_SPAWN, GALAXY_FALL_THRESHOLD } from './SkillGalaxy'
+import CosmicWarpTransition from '../UI/CosmicWarpTransition'
 
 export default function Scene() {
   const currentLocation = useGameStore((state) => state.currentLocation)
   const isOverworld = currentLocation === 'overworld'
+  const isGalaxy = currentLocation === 'void-island-4'
 
   return (
     <>
@@ -26,11 +21,11 @@ export default function Scene() {
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
         {!isOverworld && (
-          <color attach="background" args={['#050505']} />
+          <color attach="background" args={[isGalaxy ? '#020010' : '#050505']} />
         )}
 
-        {/* Lighting is handled by IslandEnvironment in FloatingIsland.jsx */}
-        {!isOverworld && (
+        {/* Lighting is handled by IslandEnvironment or Galaxy */}
+        {!isOverworld && !isGalaxy && (
           <>
             <ambientLight intensity={0.3} color="#ffeedd" />
             <directionalLight position={[15, 25, 10]} intensity={1.5} castShadow color="#ffffff" />
@@ -41,13 +36,21 @@ export default function Scene() {
           {isOverworld && (
             <Physics gravity={[0, -9.81, 0]}>
               <FloatingIsland />
-              <Player spawnPoint={ISLAND_SPAWN} fallThreshold={FALL_THRESHOLD} />
+              <Player spawnPoint={ISLAND_SPAWN} fallThreshold={FALL_THRESHOLD} dropFromSky={true} />
             </Physics>
           )}
-          {!isOverworld && <Portals />}
+          {isGalaxy && (
+            <Physics gravity={[0, -9.81, 0]}>
+              <SkillGalaxy />
+              <Player spawnPoint={GALAXY_SPAWN} fallThreshold={GALAXY_FALL_THRESHOLD} dropFromSky={false} />
+            </Physics>
+          )}
+          {!isOverworld && !isGalaxy && <Portals />}
         </Suspense>
       </Canvas>
-      <TransitionFlash />
+
+      {/* Epic Sci-Fi Hyperspace Cosmic Stargate Transition */}
+      <CosmicWarpTransition />
     </>
   )
 }

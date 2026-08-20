@@ -977,6 +977,167 @@ export function IslandTile({ type, position, rotation = [0, 0, 0], scale = 1, si
   )
 }
 
+// ─── Skill Galaxy Ancient Stargate Portal ──────────────────────
+// Epic ancient celestial stargate on Basecamp that teleports the player to the Skill Galaxy
+
+function SkillPortal({ position = [-2.5, 1.1, 5.8] }) {
+  const vortexRef = useRef()
+  const ringRef = useRef()
+  const particlesRef = useRef()
+  const teleportTo = useGameStore(s => s.teleportTo)
+  const isTransitioning = useGameStore(s => s.isTransitioning)
+  const { camera } = useThree()
+  const [isNear, setIsNear] = useState(false)
+  const worldPos = useMemo(() => new THREE.Vector3(position[0], position[1] - 1.0, position[2]), [position])
+
+  // Pre-load statue models for the gateway
+  const ringGltf = useGLTF(B + 'statue_ring.glb')
+  const columnGltf = useGLTF(B + 'statue_column.glb')
+
+  // Swirling galaxy particle dust rising from the gate
+  const particleCount = 35
+  const particlePositions = useMemo(() => {
+    const p = new Float32Array(particleCount * 3)
+    for (let i = 0; i < particleCount; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 2.0
+      p[i * 3 + 1] = Math.random() * 3.5
+      p[i * 3 + 2] = (Math.random() - 0.5) * 1.5
+    }
+    return p
+  }, [])
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+
+    if (vortexRef.current) {
+      vortexRef.current.rotation.z = -t * 1.5
+    }
+    if (ringRef.current) {
+      ringRef.current.rotation.z = t * 0.8
+    }
+
+    if (particlesRef.current) {
+      const pos = particlesRef.current.geometry.attributes.position.array
+      for (let i = 0; i < particleCount; i++) {
+        pos[i * 3 + 1] += 0.015
+        pos[i * 3] += Math.sin(t * 2 + i) * 0.004
+        if (pos[i * 3 + 1] > 3.8) {
+          pos[i * 3 + 1] = 0.2
+          pos[i * 3] = (Math.random() - 0.5) * 1.8
+        }
+      }
+      particlesRef.current.geometry.attributes.position.needsUpdate = true
+    }
+
+    // Distance check in world space
+    const dist = camera.position.distanceTo(worldPos)
+    const near = dist < 3.8
+    if (near !== isNear) setIsNear(near)
+
+    // Step-through teleport trigger
+    if (dist < 1.8 && !isTransitioning) {
+      teleportTo('void-island-4')
+    }
+  })
+
+  return (
+    <group position={position} rotation={[0, 0, 0]}>
+      {/* Twin Ancient Flanking Stone Pillars — aligned straight with landscape */}
+      <group position={[-1.7, 0, 0.45]} scale={1.2}>
+        <Clone object={columnGltf.scene} />
+        <mesh position={[0, 2.3, 0]}>
+          <octahedronGeometry args={[0.25]} />
+          <meshStandardMaterial color="#c084fc" emissive="#c084fc" emissiveIntensity={2.0} />
+        </mesh>
+      </group>
+      <group position={[1.7, 0, -0.45]} scale={1.2}>
+        <Clone object={columnGltf.scene} />
+        <mesh position={[0, 2.3, 0]}>
+          <octahedronGeometry args={[0.25]} />
+          <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={2.0} />
+        </mesh>
+      </group>
+
+      {/* Ancient Upright Stargate Archway Ring */}
+      <group position={[0, 1.8, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.8, 1.8, 1.8]}>
+        <Clone object={ringGltf.scene} />
+      </group>
+
+      {/* Swirling Cosmic Starlight Event Horizon */}
+      <group position={[0, 1.8, 0]}>
+        <mesh ref={vortexRef}>
+          <circleGeometry args={[1.35, 32]} />
+          <meshBasicMaterial
+            color="#a855f7"
+            transparent
+            opacity={0.85}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh ref={ringRef}>
+          <ringGeometry args={[1.3, 1.55, 32]} />
+          <meshBasicMaterial
+            color="#22d3ee"
+            transparent
+            opacity={0.9}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      </group>
+
+      {/* Runic Energy Floor Circles on Ground */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.4, 1.7, 32]} />
+        <meshBasicMaterial color="#a855f7" transparent opacity={0.8} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.8, 1.05, 32]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.65} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Floating Stardust Particles rising from portal */}
+      <points ref={particlesRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" count={particleCount} array={particlePositions} itemSize={3} />
+        </bufferGeometry>
+        <pointsMaterial color="#c084fc" size={0.16} transparent opacity={0.8} blending={THREE.AdditiveBlending} />
+      </points>
+
+      {/* Glowing Neon Point Light */}
+      <pointLight position={[0, 2.0, 0]} color="#a855f7" intensity={isNear ? 5.0 : 2.5} distance={9} />
+      <pointLight position={[0, 2.0, 0]} color="#22d3ee" intensity={isNear ? 3.5 : 1.5} distance={6} />
+
+      {/* Floating 3D Title (Rotated to face front) */}
+      <group position={[0, 3.7, 0]} rotation={[0, Math.PI, 0]}>
+        <Text
+          fontSize={0.28}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.04}
+          outlineColor="#7c3aed"
+        >
+          {'✦ SKILL GALAXY ✦'}
+        </Text>
+        <Text
+          position={[0, -0.28, 0]}
+          fontSize={0.16}
+          color="#22d3ee"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.025}
+          outlineColor="#000000"
+        >
+          {isNear ? '✦ Step through to warp ✦' : 'Walk through portal ↗'}
+        </Text>
+      </group>
+    </group>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────
 
 const WEATHER_TYPES = ['sunny', 'rainy', 'snowy']
@@ -1031,6 +1192,9 @@ export default function FloatingIsland() {
 
         {/* Contact & Socials Island — connected via bridge */}
         <ContactIsland />
+
+        {/* Skill Galaxy Portal — Ancient Celestial Stargate */}
+        <SkillPortal position={[-2.5, 1.1, 5.8]} />
       </group>
     </>
   )

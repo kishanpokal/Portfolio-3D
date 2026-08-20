@@ -12,7 +12,7 @@ const frontVector = new THREE.Vector3()
 const sideVector = new THREE.Vector3()
 const SKY_SPAWN_HEIGHT = 20
 
-export default function Player({ spawnPoint = [0, 3, 0], fallThreshold = -50 }) {
+export default function Player({ spawnPoint = [0, 3, 0], fallThreshold = -50, dropFromSky = false }) {
   const ref = useRef()
   const [, get] = useKeyboardControls()
   const { camera } = useThree()
@@ -20,25 +20,27 @@ export default function Player({ spawnPoint = [0, 3, 0], fallThreshold = -50 }) 
   const loadingComplete = useGameStore((s) => s.loadingComplete)
   const hasSpawnedRef = useRef(false)
 
-  // Trigger sky drop when loading finishes
+  const initialY = dropFromSky ? SKY_SPAWN_HEIGHT : (spawnPoint[1] + 0.5)
+
   useEffect(() => {
     if (loadingComplete && !hasSpawnedRef.current && ref.current) {
       hasSpawnedRef.current = true
-      ref.current.setTranslation({ x: spawnPoint[0], y: SKY_SPAWN_HEIGHT, z: spawnPoint[2] }, true)
-      ref.current.setLinvel({ x: 0, y: -2, z: 0 }, true)
+      ref.current.setTranslation({ x: spawnPoint[0], y: initialY, z: spawnPoint[2] }, true)
+      ref.current.setLinvel({ x: 0, y: -0.2, z: 0 }, true)
       ref.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
+      ref.current.wakeUp()
     }
-  }, [loadingComplete, spawnPoint])
+  }, [loadingComplete, spawnPoint, initialY])
 
   useFrame(() => {
     if (!ref.current) return
 
-    // While loading screen is active, hold player frozen in the sky
+    // While loading screen is active, hold player frozen at initial position
     if (!loadingComplete) {
-      ref.current.setTranslation({ x: spawnPoint[0], y: SKY_SPAWN_HEIGHT, z: spawnPoint[2] }, true)
+      ref.current.setTranslation({ x: spawnPoint[0], y: initialY, z: spawnPoint[2] }, true)
       ref.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
       ref.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
-      camera.position.set(spawnPoint[0], SKY_SPAWN_HEIGHT + 0.4, spawnPoint[2])
+      camera.position.set(spawnPoint[0], initialY + 0.4, spawnPoint[2])
       return
     }
 
@@ -66,25 +68,31 @@ export default function Player({ spawnPoint = [0, 3, 0], fallThreshold = -50 }) 
 
     ref.current.setLinvel({ x: direction.x, y: velocity.y, z: direction.z }, true)
 
-    // Ground detection: if vertical velocity is near zero, player is on ground
-    const isGrounded = Math.abs(velocity.y) < 0.5
+    // Ground detection: much stricter threshold prevents false positives at jump apex
+    const isGrounded = Math.abs(velocity.y) < 0.08
 
-    // Jump — use velocity-based ground check (avoids raycast hitting own collider)
+    // Jump — only when grounded AND spacebar freshly pressed (canJump resets on key release)
     if (jump && isGrounded && canJump.current) {
       ref.current.setLinvel({ x: velocity.x, y: JUMP_FORCE, z: velocity.z }, true)
       canJump.current = false
-      setTimeout(() => { canJump.current = true }, 400)
+    }
+
+    // Re-enable jump ONLY when spacebar is released while on the ground
+    // This prevents holding spacebar to keep bouncing
+    if (!jump && isGrounded) {
+      canJump.current = true
     }
 
     // Attach camera to player
     const translation = ref.current.translation()
     camera.position.set(translation.x, translation.y + 0.4, translation.z)
 
-    // Respawn from sky if fallen off the island into the void
+    // Respawn if fallen off the island into the void
     if (translation.y < fallThreshold) {
-      ref.current.setTranslation({ x: spawnPoint[0], y: SKY_SPAWN_HEIGHT, z: spawnPoint[2] }, true)
-      ref.current.setLinvel({ x: 0, y: -2, z: 0 }, true)
+      ref.current.setTranslation({ x: spawnPoint[0], y: spawnPoint[1] + 1.5, z: spawnPoint[2] }, true)
+      ref.current.setLinvel({ x: 0, y: -0.5, z: 0 }, true)
       ref.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
+      ref.current.wakeUp()
     }
   })
 
@@ -96,7 +104,7 @@ export default function Player({ spawnPoint = [0, 3, 0], fallThreshold = -50 }) 
         colliders={false} 
         mass={1} 
         type="dynamic" 
-        position={[spawnPoint[0], SKY_SPAWN_HEIGHT, spawnPoint[2]]}
+        position={[spawnPoint[0], initialY, spawnPoint[2]]}
         enabledRotations={[false, false, false]}
         linearDamping={0.5}
         ccd={true}

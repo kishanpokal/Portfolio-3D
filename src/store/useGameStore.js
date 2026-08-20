@@ -18,6 +18,11 @@ const useGameStore = create((set, get) => ({
   teleportTo: (location) => {
     const { currentLocation, isTransitioning } = get();
     if (location === currentLocation || isTransitioning) return;
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    } catch (e) {}
     set({ isTransitioning: true });
     setTimeout(() => {
       set({ currentLocation: location });

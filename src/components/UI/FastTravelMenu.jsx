@@ -36,6 +36,13 @@ export default function FastTravelMenu() {
           >
             Projects (Creation)
           </button>
+          <button 
+            className={`nav-btn ${currentLocation === 'void-island-4' ? 'active' : ''}`}
+            onClick={() => teleportTo('void-island-4')}
+            disabled={isTransitioning}
+          >
+            Skills (Galaxy)
+          </button>
         </nav>
       </div>
       
